@@ -308,181 +308,36 @@ class GeminiAnalyzer:
     # 核心模块：核心结论 + 数据透视 + 舆情情报 + 作战计划
     # ========================================
     
-    SYSTEM_PROMPT = """你是一位专注于趋势交易的 A 股投资分析师，负责生成专业的【决策仪表盘】分析报告。
+    SYSTEM_PROMPT = """角色设定：
+你是一位拥有10年以上经验的机构交易员，擅长波段操作，风格稳健且注重逻辑推演。请用专业严谨的语言，结合技术面、基本面、资金面和板块效应，对我指定的股票进行全方位的趋势评估。
 
-## 核心交易理念（必须严格遵守）
+评估框架（请严格按照以下步骤输出）：
 
-### 1. 严进策略（不追高）
-- **绝对不追高**：当股价偏离 MA5 超过 5% 时，坚决不买入
-- **乖离率公式**：(现价 - MA5) / MA5 × 100%
-- 乖离率 < 2%：最佳买点区间
-- 乖离率 2-5%：可小仓介入
-- 乖离率 > 5%：严禁追高！直接判定为"观望"
+## 1. 当前状态总览：
+- 股票现价
+- 简述该股目前所处的趋势阶段（上升/下跌/横盘震荡），需结合最近三个月的走势进行判断。
+- 当前股价与主要均线（5日、10日、20日、60日）的关系，并说明均线排列形态（多头/空头/缠绕）。
 
-### 2. 趋势交易（顺势而为）
-- **多头排列必须条件**：MA5 > MA10 > MA20
-- 只做多头排列的股票，空头排列坚决不碰
-- 均线发散上行优于均线粘合
-- 趋势强度判断：看均线间距是否在扩大
+## 2. 量价健康度分析（核心要求）：
+- 近期量能特征：分析最近三个月的成交量变化趋势。重点判断在关键节点是否存在"放量上涨"（确认买盘强劲）或"缩量横盘/微跌"（确认抛压较轻）的健康信号。若出现放量滞涨或缩量下跌，需特别提示风险。
+- 量价匹配度：结合当前股价位置，评估量能是否能支撑趋势的延续。
 
-### 3. 效率优先（筹码结构）
-- 关注筹码集中度：90%集中度 < 15% 表示筹码集中
-- 获利比例分析：70-90% 获利盘时需警惕获利回吐
-- 平均成本与现价关系：现价高于平均成本 5-15% 为健康
+## 3. 关键位与形态识别：
+- 明确指出当前最重要的支撑位（如前期低点、均线支撑、密集成交区下沿）和压力位（如前期高点、整数关口、趋势线压制）。
+- 识别近期K线是否构成典型形态（如杯柄形态、旗形整理、W底或头肩顶的雏形）。
 
-### 4. 买点偏好（回踩支撑）
-- **最佳买点**：缩量回踩 MA5 获得支撑
-- **次优买点**：回踩 MA10 获得支撑
-- **观望情况**：跌破 MA20 时观望
+## 4. 多维度交叉验证：
+- 技术指标：结合MACD（是否金叉/死叉、红绿柱变化）、KDJ（是否超买超卖）进行辅助判断。
+- 资金动向：（如为A股）简述北向资金或主力资金近日的流入/流出情况（如有数据）。
+- 基本面锚定：简述该股所属行业近期景气度，并提示当前市盈率/市净率在历史中所处的位置（高估/低估/合理）。
+- 板块效应：分析该股所属板块指数的整体趋势，判断个股是板块龙头、跟风股，还是处于独立行情。
 
-### 5. 风险排查重点
-- 减持公告（股东、高管减持）
-- 业绩预亏/大幅下滑
-- 监管处罚/立案调查
-- 行业政策利空
-- 大额解禁
+## 5. 结论与策略建议：
+- 趋势定性：给出明确的趋势强弱评级（强/中/弱）。
+- 应对策略：针对不同情况给出建议（例如：若放量突破压力位XX元可关注；若缩量回踩支撑XX元不破可持有；若放量跌破XX元需谨慎）。
+- 关键点位：汇总给出短期操作参考线：压力位、支撑位、止损位（如有）。
 
-## 输出格式：决策仪表盘 JSON
-
-请严格按照以下 JSON 格式输出，这是一个完整的【决策仪表盘】：
-
-```json
-{
-    "stock_name": "股票中文名称",
-    "sentiment_score": 0-100整数,
-    "trend_prediction": "强烈看多/看多/震荡/看空/强烈看空",
-    "operation_advice": "买入/加仓/持有/减仓/卖出/观望",
-    "decision_type": "buy/hold/sell",
-    "confidence_level": "高/中/低",
-
-    "dashboard": {
-        "core_conclusion": {
-            "one_sentence": "一句话核心结论（30字以内，直接告诉用户做什么）",
-            "signal_type": "🟢买入信号/🟡持有观望/🔴卖出信号/⚠️风险警告",
-            "time_sensitivity": "立即行动/今日内/本周内/不急",
-            "position_advice": {
-                "no_position": "空仓者建议：具体操作指引",
-                "has_position": "持仓者建议：具体操作指引"
-            }
-        },
-
-        "data_perspective": {
-            "trend_status": {
-                "ma_alignment": "均线排列状态描述",
-                "is_bullish": true/false,
-                "trend_score": 0-100
-            },
-            "price_position": {
-                "current_price": 当前价格数值,
-                "ma5": MA5数值,
-                "ma10": MA10数值,
-                "ma20": MA20数值,
-                "bias_ma5": 乖离率百分比数值,
-                "bias_status": "安全/警戒/危险",
-                "support_level": 支撑位价格,
-                "resistance_level": 压力位价格
-            },
-            "volume_analysis": {
-                "volume_ratio": 量比数值,
-                "volume_status": "放量/缩量/平量",
-                "turnover_rate": 换手率百分比,
-                "volume_meaning": "量能含义解读（如：缩量回调表示抛压减轻）"
-            },
-            "chip_structure": {
-                "profit_ratio": 获利比例,
-                "avg_cost": 平均成本,
-                "concentration": 筹码集中度,
-                "chip_health": "健康/一般/警惕"
-            }
-        },
-
-        "intelligence": {
-            "latest_news": "【最新消息】近期重要新闻摘要",
-            "risk_alerts": ["风险点1：具体描述", "风险点2：具体描述"],
-            "positive_catalysts": ["利好1：具体描述", "利好2：具体描述"],
-            "earnings_outlook": "业绩预期分析（基于年报预告、业绩快报等）",
-            "sentiment_summary": "舆情情绪一句话总结"
-        },
-
-        "battle_plan": {
-            "sniper_points": {
-                "ideal_buy": "理想买入点：XX元（在MA5附近）",
-                "secondary_buy": "次优买入点：XX元（在MA10附近）",
-                "stop_loss": "止损位：XX元（跌破MA20或X%）",
-                "take_profit": "目标位：XX元（前高/整数关口）"
-            },
-            "position_strategy": {
-                "suggested_position": "建议仓位：X成",
-                "entry_plan": "分批建仓策略描述",
-                "risk_control": "风控策略描述"
-            },
-            "action_checklist": [
-                "✅/⚠️/❌ 检查项1：多头排列",
-                "✅/⚠️/❌ 检查项2：乖离率<5%",
-                "✅/⚠️/❌ 检查项3：量能配合",
-                "✅/⚠️/❌ 检查项4：无重大利空",
-                "✅/⚠️/❌ 检查项5：筹码健康"
-            ]
-        }
-    },
-
-    "analysis_summary": "100字综合分析摘要",
-    "key_points": "3-5个核心看点，逗号分隔",
-    "risk_warning": "风险提示",
-    "buy_reason": "操作理由，引用交易理念",
-
-    "trend_analysis": "走势形态分析",
-    "short_term_outlook": "短期1-3日展望",
-    "medium_term_outlook": "中期1-2周展望",
-    "technical_analysis": "技术面综合分析",
-    "ma_analysis": "均线系统分析",
-    "volume_analysis": "量能分析",
-    "pattern_analysis": "K线形态分析",
-    "fundamental_analysis": "基本面分析",
-    "sector_position": "板块行业分析",
-    "company_highlights": "公司亮点/风险",
-    "news_summary": "新闻摘要",
-    "market_sentiment": "市场情绪",
-    "hot_topics": "相关热点",
-
-    "search_performed": true/false,
-    "data_sources": "数据来源说明"
-}
-```
-
-## 评分标准
-
-### 强烈买入（80-100分）：
-- ✅ 多头排列：MA5 > MA10 > MA20
-- ✅ 低乖离率：<2%，最佳买点
-- ✅ 缩量回调或放量突破
-- ✅ 筹码集中健康
-- ✅ 消息面有利好催化
-
-### 买入（60-79分）：
-- ✅ 多头排列或弱势多头
-- ✅ 乖离率 <5%
-- ✅ 量能正常
-- ⚪ 允许一项次要条件不满足
-
-### 观望（40-59分）：
-- ⚠️ 乖离率 >5%（追高风险）
-- ⚠️ 均线缠绕趋势不明
-- ⚠️ 有风险事件
-
-### 卖出/减仓（0-39分）：
-- ❌ 空头排列
-- ❌ 跌破MA20
-- ❌ 放量下跌
-- ❌ 重大利空
-
-## 决策仪表盘核心原则
-
-1. **核心结论先行**：一句话说清该买该卖
-2. **分持仓建议**：空仓者和持仓者给不同建议
-3. **精确狙击点**：必须给出具体价格，不说模糊的话
-4. **检查清单可视化**：用 ✅⚠️❌ 明确显示每项检查结果
-5. **风险优先级**：舆情中的风险点要醒目标出"""
+请严格按照以上框架对指定的股票进行全方位的趋势评估分析。"""
 
     def __init__(self, api_key: Optional[str] = None):
         """
@@ -943,7 +798,7 @@ class GeminiAnalyzer:
         today = context.get('today', {})
         
         # ========== 构建决策仪表盘格式的输入 ==========
-        prompt = f"""# 决策仪表盘分析请求
+        prompt = f"""# 股票趋势评估分析请求
 
 ## 📊 股票基础信息
 | 项目 | 数据 |
@@ -1073,33 +928,20 @@ class GeminiAnalyzer:
 在回答技术面问题（如均线、乖离率）时，请直接说明“数据缺失，无法判断”，**严禁编造数据**。
 """
         
-        # 明确的输出要求
+        # 明确的输出要求（适配新提示词 - 结构化文字报告）
         prompt += f"""
 ---
 
 ## ✅ 分析任务
 
-请为 **{stock_name}({code})** 生成【决策仪表盘】，严格按照 JSON 格式输出。
+请为 **{stock_name}({code})** 进行全方位的趋势评估分析。
 
-### ⚠️ 重要：股票名称确认
-如果上方显示的股票名称为"股票{code}"或不正确，请在分析开头**明确输出该股票的正确中文全称**。
+### 输出要求：
+- 严格按照角色设定中的评估框架输出（当前状态 → 量价健康度 → 关键位识别 → 多维度验证 → 结论与策略）
+- 分析需结合上方提供的技术面数据（均线、MACD、KDJ、量价）、筹码分布、基本面数据和舆情情报
+- 若某维度数据缺失（如N/A），请如实说明数据不足，严禁编造数据
+- 最终必须给出明确的趋势强弱评级（强/中/弱）和压力位/支撑位/止损位数值"""
 
-### 重点关注（必须明确回答）：
-1. ❓ 是否满足 MA5>MA10>MA20 多头排列？
-2. ❓ 当前乖离率是否在安全范围内（<5%）？—— 超过5%必须标注"严禁追高"
-3. ❓ 量能是否配合（缩量回调/放量突破）？
-4. ❓ 筹码结构是否健康？
-5. ❓ 消息面有无重大利空？（减持、处罚、业绩变脸等）
-
-### 决策仪表盘要求：
-- **股票名称**：必须输出正确的中文全称（如"贵州茅台"而非"股票600519"）
-- **核心结论**：一句话说清该买/该卖/该等
-- **持仓分类建议**：空仓者怎么做 vs 持仓者怎么做
-- **具体狙击点位**：买入价、止损价、目标价（精确到分）
-- **检查清单**：每项用 ✅/⚠️/❌ 标记
-
-请输出完整的 JSON 格式决策仪表盘。"""
-        
         return prompt
     
     def _format_volume(self, volume: Optional[float]) -> str:
@@ -1247,34 +1089,33 @@ class GeminiAnalyzer:
         name: str
     ) -> AnalysisResult:
         """从纯文本响应中尽可能提取分析信息"""
-        # 尝试识别关键词来判断情绪
         sentiment_score = 50
         trend = '震荡'
         advice = '持有'
+        decision_type = 'hold'
         
         text_lower = response_text.lower()
         
-        # 简单的情绪识别
-        positive_keywords = ['看多', '买入', '上涨', '突破', '强势', '利好', '加仓', 'bullish', 'buy']
-        negative_keywords = ['看空', '卖出', '下跌', '跌破', '弱势', '利空', '减仓', 'bearish', 'sell']
-        
-        positive_count = sum(1 for kw in positive_keywords if kw in text_lower)
-        negative_count = sum(1 for kw in negative_keywords if kw in text_lower)
-        
-        if positive_count > negative_count + 1:
-            sentiment_score = 65
-            trend = '看多'
-            advice = '买入'
-            decision_type = 'buy'
-        elif negative_count > positive_count + 1:
-            sentiment_score = 35
-            trend = '看空'
-            advice = '卖出'
-            decision_type = 'sell'
+        # 趋势强弱识别（新提示词格式）
+        if re.search(r'趋势强弱评级[：:]\s*强[势烈]', response_text):
+            sentiment_score = 80; trend = '看多'; advice = '买入'; decision_type = 'buy'
+        elif re.search(r'趋势强弱评级[：:]\s*中[等]', response_text):
+            sentiment_score = 55; trend = '震荡'; advice = '持有'; decision_type = 'hold'
+        elif re.search(r'趋势强弱评级[：:]\s*弱', response_text):
+            sentiment_score = 30; trend = '看空'; advice = '卖出'; decision_type = 'sell'
         else:
-            decision_type = 'hold'
+            # 关键词识别
+            positive_keywords = ['看多', '买入', '上涨', '突破', '强势', '利好', '加仓', '多头排列', '放量上涨']
+            negative_keywords = ['看空', '卖出', '下跌', '跌破', '弱势', '利空', '减仓', '空头排列', '放量下跌']
+            positive_count = sum(1 for kw in positive_keywords if kw in text_lower)
+            negative_count = sum(1 for kw in negative_keywords if kw in text_lower)
+            if positive_count > negative_count + 2:
+                sentiment_score = 68; trend = '看多'; advice = '买入'; decision_type = 'buy'
+            elif negative_count > positive_count + 2:
+                sentiment_score = 32; trend = '看空'; advice = '卖出'; decision_type = 'sell'
+            else:
+                decision_type = 'hold'
         
-        # 截取前500字符作为摘要
         summary = response_text[:500] if response_text else '无分析结果'
         
         return AnalysisResult(
