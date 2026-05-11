@@ -1089,6 +1089,7 @@ class GeminiAnalyzer:
         name: str
     ) -> AnalysisResult:
         """从纯文本响应中尽可能提取分析信息"""
+        import re
         sentiment_score = 50
         trend = '震荡'
         advice = '持有'
