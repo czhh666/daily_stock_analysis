@@ -1,11 +1,11 @@
-# 自动关闭过期的 Issues 和 PR
-# 每天检查一次，标记长时间无响应的 issues/PRs
+# 自动关闭过期�?Issues �?PR
+# 每天检查一次，标记长时间无响应�?issues/PRs
 
 name: Stale Issues & PRs
 
 on:
   schedule:
-    # 每天 UTC 0:00（北京时间 8:00）检查一次
+    # 每天 UTC 0:00（北京时�?8:00）检查一�?
     - cron: '0 0 * * *'
   # 支持手动触发
   workflow_dispatch:
@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: 🏷️ 标记并关闭过期内容
+      - name: 🏷�?标记并关闭过期内�?
         uses: actions/stale@v9
         with:
           # ===== Issue 配置 =====
@@ -28,37 +28,37 @@ jobs:
           days-before-issue-close: 7
           stale-issue-label: 'stale'
           stale-issue-message: |
-            👋 这个 Issue 已经 **7 天** 没有活动了。
+            👋 这个 Issue 已经 **7 �?* 没有活动了�?
             
-            如果问题仍然存在，请回复说明最新情况，我们会继续跟进。
-            如果问题已解决或不再需要，可以直接关闭此 Issue。
+            如果问题仍然存在，请回复说明最新情况，我们会继续跟进�?
+            如果问题已解决或不再需要，可以直接关闭�?Issue�?
             
-            **如果 7 天内没有回复，此 Issue 将自动关闭。**
+            **如果 7 天内没有回复，此 Issue 将自动关闭�?*
           close-issue-message: |
-            🔒 由于长时间没有活动，此 Issue 已自动关闭。
+            🔒 由于长时间没有活动，�?Issue 已自动关闭�?
             
-            如果问题仍然存在，欢迎重新打开或创建新的 Issue。
+            如果问题仍然存在，欢迎重新打开或创建新�?Issue�?
           
           # ===== PR 配置 =====
           days-before-pr-stale: 21
           days-before-pr-close: 14
           stale-pr-label: 'stale'
           stale-pr-message: |
-            👋 这个 PR 已经 **21 天** 没有活动了。
+            👋 这个 PR 已经 **21 �?* 没有活动了�?
             
             请检查是否需要：
             - 解决合并冲突
             - 回复 review 意见
             - 更新代码
             
-            **如果 14 天内没有更新，此 PR 将自动关闭。**
+            **如果 14 天内没有更新，此 PR 将自动关闭�?*
           close-pr-message: |
-            🔒 由于长时间没有活动，此 PR 已自动关闭。
+            🔒 由于长时间没有活动，�?PR 已自动关闭�?
             
-            如果您仍希望合入这些更改，请重新打开或创建新的 PR。
+            如果您仍希望合入这些更改，请重新打开或创建新�?PR�?
           
           # ===== 排除规则 =====
-          # 带有这些标签的不会被标记为 stale
+          # 带有这些标签的不会被标记�?stale
           exempt-issue-labels: 'pinned,security,enhancement,help wanted,good first issue'
           exempt-pr-labels: 'pinned,security,work-in-progress,wip'
           
@@ -75,5 +75,5 @@ jobs:
           # 移除 stale 标签（当有新活动时）
           remove-stale-when-updated: true
           
-          # 调试模式（设为 true 时只打印不实际操作）
+          # 调试模式（设�?true 时只打印不实际操作）
           debug-only: false

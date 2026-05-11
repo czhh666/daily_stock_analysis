@@ -1,5 +1,5 @@
-# CI 流程 - Pull Request 自动检测
-# 当有 PR 提交或推送到 main 分支时自动运行
+# CI 流程 - Pull Request 自动检�?
+# 当有 PR 提交或推送到 main 分支时自动运�?
 
 name: CI
 
@@ -26,17 +26,17 @@ on:
       - 'docker-compose.yml'
 
 jobs:
-  # ==================== 核心检查（必须通过）====================
+  # ==================== 核心检查（必须通过�?===================
   check:
-    name: ✅ 代码检查
+    name: �?代码检�?
     runs-on: ubuntu-latest
     
     steps:
-      - name: 📥 检出代码
-        uses: actions/checkout@v4
+      - name: 📥 检出代�?
+        uses: actions/checkout@v6
       
       - name: 🐍 设置 Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -47,27 +47,27 @@ jobs:
           pip install -r requirements.txt
           pip install flake8
       
-      - name: 🐍 语法检查
+      - name: 🐍 语法检�?
         run: |
           python -m py_compile main.py src/config.py src/analyzer.py src/notification.py
           python -m py_compile src/storage.py src/scheduler.py src/search_service.py
           python -m py_compile src/market_analyzer.py src/stock_analyzer.py
           python -m py_compile data_provider/*.py
-          echo "✅ Python 语法检查通过"
+          echo "�?Python 语法检查通过"
       
-      - name: 🔎 静态分析 (严重错误)
+      - name: 🔎 静态分�?(严重错误)
         run: |
-          # 只检查严重错误：语法错误、未定义变量等
+          # 只检查严重错误：语法错误、未定义变量�?
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
       
-      - name: ✅ 模块导入测试
+      - name: �?模块导入测试
         run: |
-          python -c "from src.config import get_config; print('✅ config')"
-          python -c "from src.storage import DatabaseManager; print('✅ storage')"
-          python -c "from src.notification import NotificationService; print('✅ notification')"
-          python -c "from data_provider import DataFetcherManager; print('✅ data_provider')"
-          python -c "from src.analyzer import GeminiAnalyzer; print('✅ analyzer')"
-          echo "✅ 所有模块导入成功"
+          python -c "from src.config import get_config; print('�?config')"
+          python -c "from src.storage import DatabaseManager; print('�?storage')"
+          python -c "from src.notification import NotificationService; print('�?notification')"
+          python -c "from data_provider import DataFetcherManager; print('�?data_provider')"
+          python -c "from src.analyzer import GeminiAnalyzer; print('�?analyzer')"
+          echo "�?所有模块导入成�?
 
   # ==================== Docker 构建测试 ====================
   docker:
@@ -76,10 +76,10 @@ jobs:
     needs: [check]
     
     steps:
-      - name: 📥 检出代码
-        uses: actions/checkout@v4
+      - name: 📥 检出代�?
+        uses: actions/checkout@v6
       
       - name: 🐳 构建镜像
         run: |
           docker build -t stock-analysis:test -f docker/Dockerfile .
-          docker run --rm stock-analysis:test python -c "print('✅ Docker OK')"
+          docker run --rm stock-analysis:test python -c "print('�?Docker OK')"

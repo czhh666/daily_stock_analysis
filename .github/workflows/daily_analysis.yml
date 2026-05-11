@@ -14,11 +14,11 @@ on:
         default: 'full'
         type: choice
         options:
-          - full          # 完整分析（股票+大盘）
-          - market-only   # 仅大盘复盘
-          - stocks-only   # 仅股票分析
+          - full          # 完整分析（股�?大盘�?
+          - market-only   # 仅大盘复�?
+          - stocks-only   # 仅股票分�?
 
-# 并发控制：同一时间只运行一个分析任务
+# 并发控制：同一时间只运行一个分析任�?
 concurrency:
   group: stock-analysis
   cancel-in-progress: false
@@ -26,15 +26,15 @@ concurrency:
 jobs:
   analyze:
     runs-on: ubuntu-latest
-    # 添加超时限制，防止任务卡死
+    # 添加超时限制，防止任务卡�?
     timeout-minutes: 30
     
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v4
+      - name: 检出代�?
+        uses: actions/checkout@v6
       
       - name: 设置 Python 环境
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -65,7 +65,7 @@ jobs:
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL || secrets.OPENAI_MODEL }}
           
           # ==========================================
-          # 数据源
+          # 数据�?
           # ==========================================
           TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
           
@@ -80,7 +80,7 @@ jobs:
           # 通知渠道（可同时配置多个，全部推送）
           # ==========================================
           
-          # 方式一：企业微信 Webhook
+          # 方式一：企业微�?Webhook
           WECHAT_WEBHOOK_URL: ${{ secrets.WECHAT_WEBHOOK_URL }}
           WECHAT_MSG_TYPE: ${{ vars.WECHAT_MSG_TYPE || secrets.WECHAT_MSG_TYPE || 'markdown' }}
           
@@ -100,10 +100,10 @@ jobs:
           PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
           PUSHOVER_API_TOKEN: ${{ secrets.PUSHOVER_API_TOKEN }}
           
-          # 方式六：PushPlus ⬅️ 新增！
+          # 方式六：PushPlus ⬅️ 新增�?
           PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
           
-          # 方式七：自定义 Webhook（钉钉、Bark、自建服务等）
+          # 方式七：自定�?Webhook（钉钉、Bark、自建服务等�?
           CUSTOM_WEBHOOK_URLS: ${{ secrets.CUSTOM_WEBHOOK_URLS }}
           CUSTOM_WEBHOOK_BEARER_TOKEN: ${{ secrets.CUSTOM_WEBHOOK_BEARER_TOKEN }}
           
@@ -112,7 +112,7 @@ jobs:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           DISCORD_MAIN_CHANNEL_ID: ${{ secrets.DISCORD_MAIN_CHANNEL_ID }}
           
-          # 方式九：飞书云文档
+          # 方式九：飞书云文�?
           FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
           FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
           FEISHU_FOLDER_TOKEN: ${{ secrets.FEISHU_FOLDER_TOKEN }}
@@ -127,7 +127,7 @@ jobs:
           STOCK_LIST: ${{ vars.STOCK_LIST || secrets.STOCK_LIST || '600519' }}
           
           # ==========================================
-          # 运行配置 ⬅️ 新增！
+          # 运行配置 ⬅️ 新增�?
           # ==========================================
           REPORT_TYPE: ${{ vars.REPORT_TYPE || secrets.REPORT_TYPE || 'simple' }}
           SINGLE_STOCK_NOTIFY: ${{ vars.SINGLE_STOCK_NOTIFY || secrets.SINGLE_STOCK_NOTIFY || 'false' }}
@@ -139,11 +139,11 @@ jobs:
           # ==========================================
           LOG_LEVEL: INFO
           MAX_WORKERS: ${{ vars.MAX_WORKERS || secrets.MAX_WORKERS || '1' }}
-          # GitHub Actions 环境建议关闭不稳定的数据源
+          # GitHub Actions 环境建议关闭不稳定的数据�?
           ENABLE_CHIP_DISTRIBUTION: 'false'
           # 实时行情数据源优先级（腾讯有量比且稳定，推荐首选）
-          # 可选值: tencent, akshare_sina, efinance, akshare_em, tushare
-          # 如果有 Tushare Pro 高积分账号，可将 tushare 放在首位
+          # 可选�? tencent, akshare_sina, efinance, akshare_em, tushare
+          # 如果�?Tushare Pro 高积分账号，可将 tushare 放在首位
           REALTIME_SOURCE_PRIORITY: ${{ vars.REALTIME_SOURCE_PRIORITY || 'tencent,akshare_sina,efinance,akshare_em' }}
           
         run: |
@@ -153,29 +153,29 @@ jobs:
           echo "=========================================="
           echo "🚀 A股自选股智能分析系统"
           echo "=========================================="
-          echo "⏰ 时间: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')"
+          echo "�?时间: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')"
           echo "🎯 运行模式: $MODE"
           echo "📊 自选股: $STOCK_LIST"
           echo "📝 报告类型: $REPORT_TYPE"
           echo ""
           echo "=========================================="
-          echo "📋 配置检查"
+          echo "📋 配置检�?
           echo "=========================================="
-          echo "【AI 配置】"
-          echo "  Gemini API Key: $([ -n "$GEMINI_API_KEY" ] && echo '✅ 已配置' || echo '❌ 未配置')"
-          echo "  OpenAI API Key: $([ -n "$OPENAI_API_KEY" ] && echo '✅ 已配置' || echo '⚪ 未配置')"
+          echo "【AI 配置�?
+          echo "  Gemini API Key: $([ -n "$GEMINI_API_KEY" ] && echo '�?已配�? || echo '�?未配�?)"
+          echo "  OpenAI API Key: $([ -n "$OPENAI_API_KEY" ] && echo '�?已配�? || echo '�?未配�?)"
           echo ""
-          echo "【搜索引擎】"
-          echo "  Bocha API Keys: $([ -n "$BOCHA_API_KEYS" ] && echo '✅ 已配置' || echo '⚪ 未配置')"
-          echo "  Tavily API Keys: $([ -n "$TAVILY_API_KEYS" ] && echo '✅ 已配置' || echo '⚪ 未配置')"
+          echo "【搜索引擎�?
+          echo "  Bocha API Keys: $([ -n "$BOCHA_API_KEYS" ] && echo '�?已配�? || echo '�?未配�?)"
+          echo "  Tavily API Keys: $([ -n "$TAVILY_API_KEYS" ] && echo '�?已配�? || echo '�?未配�?)"
           echo ""
-          echo "【通知渠道】"
-          echo "  PushPlus: $([ -n "$PUSHPLUS_TOKEN" ] && echo '✅ 已配置' || echo '⚪ 未配置')"
-          echo "  企业微信: $([ -n "$WECHAT_WEBHOOK_URL" ] && echo '✅ 已配置' || echo '⚪ 未配置')"
-          echo "  飞书: $([ -n "$FEISHU_WEBHOOK_URL" ] && echo '✅ 已配置' || echo '⚪ 未配置')"
-          echo "  Telegram: $([ -n "$TELEGRAM_BOT_TOKEN" ] && echo '✅ 已配置' || echo '⚪ 未配置')"
-          echo "  Discord: $([ -n "$DISCORD_WEBHOOK_URL" ] && echo '✅ 已配置' || echo '⚪ 未配置')"
-          echo "  AstrBot: $([ -n "$ASTRBOT_URL" ] && echo '✅ 已配置' || echo '⚪ 未配置')"
+          echo "【通知渠道�?
+          echo "  PushPlus: $([ -n "$PUSHPLUS_TOKEN" ] && echo '�?已配�? || echo '�?未配�?)"
+          echo "  企业微信: $([ -n "$WECHAT_WEBHOOK_URL" ] && echo '�?已配�? || echo '�?未配�?)"
+          echo "  飞书: $([ -n "$FEISHU_WEBHOOK_URL" ] && echo '�?已配�? || echo '�?未配�?)"
+          echo "  Telegram: $([ -n "$TELEGRAM_BOT_TOKEN" ] && echo '�?已配�? || echo '�?未配�?)"
+          echo "  Discord: $([ -n "$DISCORD_WEBHOOK_URL" ] && echo '�?已配�? || echo '�?未配�?)"
+          echo "  AstrBot: $([ -n "$ASTRBOT_URL" ] && echo '�?已配�? || echo '�?未配�?)"
           echo "=========================================="
           echo ""
           
@@ -189,7 +189,7 @@ jobs:
           fi
       
       - name: 上传分析报告
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: analysis-reports-${{ github.run_number }}
@@ -206,13 +206,13 @@ jobs:
           echo "📊 分析完成"
           echo "=========================================="
           if [ -d "reports" ] && [ "$(ls -A reports 2>/dev/null)" ]; then
-            echo "生成的报告:"
+            echo "生成的报�?"
             ls -la reports/
           else
-            echo "⚠️ 未生成报告文件"
+            echo "⚠️ 未生成报告文�?
           fi
           echo ""
           if [ -f "logs/stock_analysis_$(date +%Y%m%d).log" ]; then
-            echo "📜 最近日志（最后 30 行）:"
-            tail -30 logs/stock_analysis_*.log 2>/dev/null || echo "无日志"
+            echo "📜 最近日志（最�?30 行）:"
+            tail -30 logs/stock_analysis_*.log 2>/dev/null || echo "无日�?
           fi
