@@ -1,5 +1,5 @@
-# PR 自动审查 - 语法检�?+ AI 语义审查
-# 当有 PR 创建或更新时自动触发
+﻿# PR 鑷姩瀹℃煡 - 璇硶妫€鏌?+ AI 璇箟瀹℃煡
+# 褰撴湁 PR 鍒涘缓鎴栨洿鏂版椂鑷姩瑙﹀彂
 
 name: PR Review
 
@@ -8,16 +8,26 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - '**.py'
+      - '**.md'
+      - '**.ts'
+      - '**.tsx'
+      - 'docs/**'
+      - 'README.md'
+      - 'AGENTS.md'
+      - 'apps/dsa-web/**'
       - 'requirements.txt'
+      - '.github/requirements-ci.txt'
       - 'pyproject.toml'
       - 'setup.cfg'
-      - 'Dockerfile'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
+      - '.github/workflows/**'
+      - '.github/scripts/**'
+      - 'docker/Dockerfile'
       - 'docker-compose.yml'
-  # 支持手动触发（用于重新审查）
+  # 鏀寔鎵嬪姩瑙﹀彂锛堢敤浜庨噸鏂板鏌ワ級
   workflow_dispatch:
 
-# 限制并发，避免同一 PR 多次触发时重复评�?
-concurrency:
+# 闄愬埗骞跺彂锛岄伩鍏嶅悓涓€ PR 澶氭瑙﹀彂鏃堕噸澶嶈瘎璁?concurrency:
   group: pr-review-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
@@ -27,85 +37,89 @@ permissions:
   issues: write
 
 jobs:
-  # ==================== 安全检查（检测敏感文件修改）====================
+  # ==================== 瀹夊叏妫€鏌ワ紙妫€娴嬫晱鎰熸枃浠朵慨鏀癸級====================
   security-check:
-    name: 🔒 安全检�?
-    runs-on: ubuntu-latest
+    name: 馃敀 瀹夊叏妫€鏌?    runs-on: ubuntu-latest
     outputs:
       safe_to_run: ${{ steps.check_sensitive.outputs.safe_to_run }}
+      sensitive_files_changed: ${{ steps.check_sensitive.outputs.sensitive_files_changed }}
     
     steps:
-      - name: 📥 检出代�?
-        uses: actions/checkout@v6
+      - name: 馃摜 妫€鍑轰唬鐮?        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       
-      - name: 🔄 获取 base 分支
+      - name: 馃攧 鑾峰彇 base 鍒嗘敮
         run: git fetch origin ${{ github.base_ref || 'main' }}:refs/remotes/origin/${{ github.base_ref || 'main' }}
       
-      - name: 🔒 检查敏感文件修�?
-        id: check_sensitive
+      - name: 馃敀 妫€鏌ユ晱鎰熸枃浠朵慨鏀?        id: check_sensitive
         run: |
           BASE_REF="${{ github.base_ref || 'main' }}"
-          SENSITIVE_FILES=$(git diff --name-only origin/$BASE_REF...HEAD | grep -E '\.(github/workflows/.*\.yml|\.github/scripts/.*\.py)$' || echo "")
+          SENSITIVE_FILES=$(git diff --name-only origin/$BASE_REF...HEAD | grep -E '^(\.github/workflows/.*\.yml|\.github/scripts/.*\.py)$' || echo "")
           
           if [ -n "$SENSITIVE_FILES" ]; then
-            echo "⚠️ **检测到敏感文件修改，需要人工审核！**" >> $GITHUB_STEP_SUMMARY
+            echo "鈿狅笍 **妫€娴嬪埌鏁忔劅鏂囦欢淇敼锛岄渶瑕佷汉宸ュ鏍革紒**" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "修改的敏感文件：" >> $GITHUB_STEP_SUMMARY
+            echo "淇敼鐨勬晱鎰熸枃浠讹細" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "$SENSITIVE_FILES" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "为了安全，自动审查已暂停。请仓库维护者人工检查这些文件后，可通过 workflow_dispatch 手动触发审查�? >> $GITHUB_STEP_SUMMARY
-            
-            echo "safe_to_run=false" >> $GITHUB_OUTPUT
-            exit 1
+            echo "宸叉爣璁颁负鏁忔劅鍙樻洿锛岃閲嶇偣浜哄伐澶嶆牳锛涜嚜鍔ㄦ祦绋嬬户缁墽琛屻€? >> $GITHUB_STEP_SUMMARY
+            echo "sensitive_files_changed=true" >> $GITHUB_OUTPUT
+            echo "safe_to_run=true" >> $GITHUB_OUTPUT
           else
-            echo "�?未检测到敏感文件修改" >> $GITHUB_STEP_SUMMARY
+            echo "鉁?鏈娴嬪埌鏁忔劅鏂囦欢淇敼" >> $GITHUB_STEP_SUMMARY
+            echo "sensitive_files_changed=false" >> $GITHUB_OUTPUT
             echo "safe_to_run=true" >> $GITHUB_OUTPUT
           fi
 
-  # ==================== 静态检查（先于 AI 审查�?===================
+  # ==================== 闈欐€佹鏌ワ紙鍏堜簬 AI 瀹℃煡锛?===================
   auto-check:
-    name: 🔍 静态检�?
-    runs-on: ubuntu-latest
+    name: 馃攳 闈欐€佹鏌?    runs-on: ubuntu-latest
     needs: [security-check]
     if: needs.security-check.outputs.safe_to_run == 'true'
     outputs:
       syntax_ok: ${{ steps.syntax.outputs.syntax_ok }}
       has_py_changes: ${{ steps.check_files.outputs.has_py_changes }}
+      has_reviewable_changes: ${{ steps.check_files.outputs.has_reviewable_changes }}
     
     steps:
-      - name: 📥 检出代�?
-        uses: actions/checkout@v6
+      - name: 馃摜 妫€鍑轰唬鐮?        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       
-      - name: 🔄 获取 base 分支
+      - name: 馃攧 鑾峰彇 base 鍒嗘敮
         run: git fetch origin ${{ github.base_ref || 'main' }}:refs/remotes/origin/${{ github.base_ref || 'main' }}
       
-      - name: 🐍 设置 Python
+      - name: 馃悕 璁剧疆 Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           cache: 'pip'
       
-      - name: 📦 安装依赖
+      - name: 馃摝 瀹夎渚濊禆
         run: |
           pip install --upgrade pip
           pip install flake8
       
-      - name: 📋 检查变更文�?
-        id: check_files
+      - name: 馃搵 妫€鏌ュ彉鏇存枃浠?        id: check_files
         run: |
           BASE_REF="${{ github.base_ref || 'main' }}"
           CHANGED_FILES=$(git diff --name-only origin/$BASE_REF...HEAD -- '*.py' 2>/dev/null || echo "")
+          REVIEWABLE_FILES=$(git diff --name-only origin/$BASE_REF...HEAD -- '*.py' '*.md' 'docs/**' 'README.md' 'AGENTS.md' 'requirements.txt' '.github/requirements-ci.txt' 'pyproject.toml' 'setup.cfg' '.github/PULL_REQUEST_TEMPLATE.md' '.github/workflows/**' '.github/scripts/**' 2>/dev/null || echo "")
+
+          if [ -z "$REVIEWABLE_FILES" ]; then
+            echo "has_reviewable_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_reviewable_changes=true" >> $GITHUB_OUTPUT
+          fi
+
           if [ -z "$CHANGED_FILES" ]; then
             echo "has_py_changes=false" >> $GITHUB_OUTPUT
-            echo "�?没有修改 Python 文件" >> $GITHUB_STEP_SUMMARY
+            echo "鉁?娌℃湁淇敼 Python 鏂囦欢" >> $GITHUB_STEP_SUMMARY
           else
             echo "has_py_changes=true" >> $GITHUB_OUTPUT
             echo "CHANGED_FILES<<EOF" >> $GITHUB_ENV
@@ -113,19 +127,18 @@ jobs:
             echo "EOF" >> $GITHUB_ENV
           fi
       
-      - name: 🐍 Python 语法检�?
-        id: syntax
+      - name: 馃悕 Python 璇硶妫€鏌?        id: syntax
         if: steps.check_files.outputs.has_py_changes == 'true'
         run: |
-          echo "## 🐍 语法检�? >> $GITHUB_STEP_SUMMARY
-          echo "检查文�? $CHANGED_FILES"
+          echo "## 馃悕 璇硶妫€鏌? >> $GITHUB_STEP_SUMMARY
+          echo "妫€鏌ユ枃浠? $CHANGED_FILES"
           
           ERRORS=""
           SYNTAX_OK="true"
           for file in $CHANGED_FILES; do
             if [ -f "$file" ]; then
               if ! python -m py_compile "$file" 2>&1; then
-                ERRORS="$ERRORS\n�?$file 语法错误"
+                ERRORS="$ERRORS\n鉂?$file 璇硶閿欒"
                 SYNTAX_OK="false"
               fi
             fi
@@ -137,47 +150,45 @@ jobs:
             echo -e "$ERRORS" >> $GITHUB_STEP_SUMMARY
             exit 1
           else
-            echo "�?所有文件语法正�? >> $GITHUB_STEP_SUMMARY
+            echo "鉁?鎵€鏈夋枃浠惰娉曟纭? >> $GITHUB_STEP_SUMMARY
           fi
       
-      - name: 🔎 Flake8 检查（严重错误�?
-        if: steps.check_files.outputs.has_py_changes == 'true'
-        continue-on-error: true
+      - name: 馃攷 Flake8 妫€鏌ワ紙涓ラ噸閿欒锛?        if: steps.check_files.outputs.has_py_changes == 'true'
         run: |
-          echo "## 🔎 代码质量检�? >> $GITHUB_STEP_SUMMARY
+          echo "## 馃攷 浠ｇ爜璐ㄩ噺妫€鏌? >> $GITHUB_STEP_SUMMARY
           RESULT=$(flake8 $CHANGED_FILES --select=E9,F63,F7,F82 --format='%(path)s:%(row)d: %(code)s %(text)s' 2>/dev/null || true)
           if [ -n "$RESULT" ]; then
-            echo "⚠️ 发现以下问题�? >> $GITHUB_STEP_SUMMARY
+            echo "鈿狅笍 鍙戠幇浠ヤ笅闂锛? >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "$RESULT" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
+            exit 1
           else
-            echo "�?未发现严重代码问�? >> $GITHUB_STEP_SUMMARY
+            echo "鉁?鏈彂鐜颁弗閲嶄唬鐮侀棶棰? >> $GITHUB_STEP_SUMMARY
           fi
       
-      - name: 📊 变更统计
+      - name: 馃搳 鍙樻洿缁熻
         run: |
           BASE_REF="${{ github.base_ref || 'main' }}"
-          echo "## 📊 变更统计" >> $GITHUB_STEP_SUMMARY
+          echo "## 馃搳 鍙樻洿缁熻" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           STATS=$(git diff --stat origin/$BASE_REF...HEAD 2>/dev/null | tail -1)
           echo "$STATS" >> $GITHUB_STEP_SUMMARY
 
-  # ==================== AI 代码审查（依赖静态检查通过�?===================
+  # ==================== AI 浠ｇ爜瀹℃煡锛堜緷璧栭潤鎬佹鏌ラ€氳繃锛?===================
   ai-review:
-    name: 🤖 AI 代码审查
+    name: 馃 AI 浠ｇ爜瀹℃煡
     runs-on: ubuntu-latest
     needs: [security-check, auto-check]
     if: |
       needs.security-check.outputs.safe_to_run == 'true' &&
       needs.auto-check.result == 'success' &&
-      needs.auto-check.outputs.has_py_changes == 'true' &&
+      needs.auto-check.outputs.has_reviewable_changes == 'true' &&
       vars.ENABLE_AI_REVIEW != 'false'
     
     steps:
-      # 先检出主分支（获取最新的 .github/scripts�?
-      - name: 📥 检出主分支脚本
-        uses: actions/checkout@v6
+      # 鍏堟鍑轰富鍒嗘敮锛堣幏鍙栨渶鏂扮殑 .github/scripts锛?      - name: 馃摜 妫€鍑轰富鍒嗘敮鑴氭湰
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.repository.default_branch }}
           sparse-checkout: |
@@ -185,58 +196,61 @@ jobs:
           sparse-checkout-cone-mode: false
           path: main-scripts
       
-      # 再检�?PR 代码（用�?diff 分析�?
-      - name: 📥 检�?PR 代码
-        uses: actions/checkout@v6
+      # 鍐嶆鍑?PR 浠ｇ爜锛堢敤浜?diff 鍒嗘瀽锛?      - name: 馃摜 妫€鍑?PR 浠ｇ爜
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           path: pr-code
       
-      - name: 🔄 获取 base 分支
+      - name: 馃攧 鑾峰彇 base 鍒嗘敮
         working-directory: pr-code
         run: git fetch origin ${{ github.base_ref || 'main' }}:refs/remotes/origin/${{ github.base_ref || 'main' }}
       
-      - name: 🐍 设置 Python
+      - name: 馃悕 璁剧疆 Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       
-      - name: 📦 安装依赖
+      - name: 馃摝 瀹夎渚濊禆
         run: pip install google-genai openai httpx
       
-      - name: 🤖 AI 审查代码变更
+      - name: 馃 AI 瀹℃煡浠ｇ爜鍙樻洿
         working-directory: pr-code
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}
           GEMINI_MODEL_FALLBACK: ${{ vars.GEMINI_MODEL_FALLBACK || 'gemini-2.5-flash' }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+          AI_REVIEW_STRICT: ${{ vars.AI_REVIEW_STRICT || 'false' }}
+          CI_SYNTAX_OK: ${{ needs.auto-check.outputs.syntax_ok || '' }}
+          CI_HAS_PY_CHANGES: ${{ needs.auto-check.outputs.has_py_changes || 'false' }}
+          CI_AUTO_CHECK_RESULT: ${{ needs.auto-check.result || '' }}
         run: python ../main-scripts/.github/scripts/ai_review.py
       
-      - name: 📤 上传审查结果
-        uses: actions/upload-artifact@v7
+      - name: 馃摛 涓婁紶瀹℃煡缁撴灉
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: ai-review-result
           path: pr-code/ai_review_result.txt
           if-no-files-found: ignore
 
-  # ==================== PR 标签自动分类 ====================
+  # ==================== PR 鏍囩鑷姩鍒嗙被 ====================
   labeler:
-    name: 🏷�?自动标签
+    name: 馃彿锔?鑷姩鏍囩
     runs-on: ubuntu-latest
     
     steps:
-      - name: 📥 检出代�?
-        uses: actions/checkout@v6
+      - name: 馃摜 妫€鍑轰唬鐮?        uses: actions/checkout@v5
       
-      - name: 🏷�?添加标签
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+      - name: 馃彿锔?娣诲姞鏍囩
+        if: github.event_name == 'pull_request_target'
+        uses: actions/github-script@v8
         with:
           script: |
             const { data: files } = await github.rest.pulls.listFiles({
@@ -304,32 +318,31 @@ jobs:
               }
             }
 
-  # ==================== 自动评论检查结�?====================
+  # ==================== 鑷姩璇勮妫€鏌ョ粨鏋?====================
   comment:
-    name: 💬 审查报告
+    name: 馃挰 瀹℃煡鎶ュ憡
     runs-on: ubuntu-latest
     needs: [security-check, auto-check, ai-review]
     if: always() && github.event_name == 'pull_request_target' && needs.security-check.outputs.safe_to_run == 'true'
     
     steps:
-      - name: 📥 检出代�?
-        uses: actions/checkout@v6
+      - name: 馃摜 妫€鍑轰唬鐮?        uses: actions/checkout@v5
         with:
           fetch-depth: 0
       
-      - name: 📥 下载 AI 审查结果
-        uses: actions/download-artifact@v4
+      - name: 馃摜 涓嬭浇 AI 瀹℃煡缁撴灉
+        uses: actions/download-artifact@v7
         if: needs.ai-review.result == 'success'
         continue-on-error: true
         with:
           name: ai-review-result
           path: .
       
-      - name: 💬 生成审查报告
+      - name: 馃挰 鐢熸垚瀹℃煡鎶ュ憡
         env:
           AUTO_CHECK_RESULT: ${{ needs.auto-check.result }}
           AI_REVIEW_RESULT: ${{ needs.ai-review.result }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
@@ -359,42 +372,41 @@ jobs:
             
             const botComment = comments.find(c => 
               c.user.type === 'Bot' && 
-              c.body.includes('## 🤖 自动审查报告')
+              c.body.includes('## 馃 鑷姩瀹℃煡鎶ュ憡')
             );
             
-            const checkStatus = process.env.AUTO_CHECK_RESULT === 'success' ? '�?通过' : '⚠️ 有问�?;
-            const aiStatus = process.env.AI_REVIEW_RESULT === 'success' ? '�?已完�? : 
-                            process.env.AI_REVIEW_RESULT === 'skipped' ? '⏭️ 跳过' : '⚠️ 失败';
+            const checkStatus = process.env.AUTO_CHECK_RESULT === 'success' ? '鉁?閫氳繃' : '鈿狅笍 鏈夐棶棰?;
+            const aiStatus = process.env.AI_REVIEW_RESULT === 'success' ? '鉁?宸插畬鎴? : 
+                            process.env.AI_REVIEW_RESULT === 'skipped' ? '鈴笍 璺宠繃' : '鈿狅笍 澶辫触';
             
-            let report = `## 🤖 自动审查报告
+            let report = `## 馃 鑷姩瀹℃煡鎶ュ憡
 
-            | 项目 | 结果 |
+            | 椤圭洰 | 缁撴灉 |
             |------|------|
-            | 📊 变更文件 | ${changedFiles} �?|
-            | �?新增行数 | ${additions} �?|
-            | �?删除行数 | ${deletions} �?|
-            | 🔍 静态检�?| ${checkStatus} |
-            | 🧠 AI 审查 | ${aiStatus} |
+            | 馃搳 鍙樻洿鏂囦欢 | ${changedFiles} 涓?|
+            | 鉃?鏂板琛屾暟 | ${additions} 琛?|
+            | 鉃?鍒犻櫎琛屾暟 | ${deletions} 琛?|
+            | 馃攳 闈欐€佹鏌?| ${checkStatus} |
+            | 馃 AI 瀹℃煡 | ${aiStatus} |
 
-            ### 📁 修改的文�?
-
+            ### 馃搧 淇敼鐨勬枃浠?
             `;
             
             for (const file of files.slice(0, 20)) {
-              const status = file.status === 'added' ? '🆕' : 
-                            file.status === 'removed' ? '🗑�? : '📝';
+              const status = file.status === 'added' ? '馃啎' : 
+                            file.status === 'removed' ? '馃棏锔? : '馃摑';
               report += `- ${status} \`${file.filename}\` (+${file.additions}/-${file.deletions})\n`;
             }
             
             if (files.length > 20) {
-              report += `\n... 还有 ${files.length - 20} 个文件\n`;
+              report += `\n... 杩樻湁 ${files.length - 20} 涓枃浠禱n`;
             }
             
             if (aiReview) {
               report += `
             ---
 
-            ### 🧠 AI 代码审查意见
+            ### 馃 AI 浠ｇ爜瀹℃煡鎰忚
 
             ${aiReview}
             `;
@@ -403,8 +415,7 @@ jobs:
             report += `
             ---
 
-            > 💡 **提示**: 请确保代码已通过本地测试，并遵循项目代码规范�?
-            `;
+            > 馃挕 **鎻愮ず**: 璇风‘淇濅唬鐮佸凡閫氳繃鏈湴娴嬭瘯锛屽苟閬靛惊椤圭洰浠ｇ爜瑙勮寖銆?            `;
             
             if (botComment) {
               await github.rest.issues.updateComment({

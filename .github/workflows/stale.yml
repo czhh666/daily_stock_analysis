@@ -1,13 +1,12 @@
-# 自动关闭过期�?Issues �?PR
-# 每天检查一次，标记长时间无响应�?issues/PRs
+﻿# 鑷姩鍏抽棴杩囨湡鐨?Issues 鍜?PR
+# 姣忓ぉ妫€鏌ヤ竴娆★紝鏍囪闀挎椂闂存棤鍝嶅簲鐨?issues/PRs
 
 name: Stale Issues & PRs
 
 on:
   schedule:
-    # 每天 UTC 0:00（北京时�?8:00）检查一�?
-    - cron: '0 0 * * *'
-  # 支持手动触发
+    # 姣忓ぉ UTC 0:00锛堝寳浜椂闂?8:00锛夋鏌ヤ竴娆?    - cron: '0 0 * * *'
+  # 鏀寔鎵嬪姩瑙﹀彂
   workflow_dispatch:
 
 permissions:
@@ -16,64 +15,55 @@ permissions:
 
 jobs:
   stale:
-    name: 🧹 清理过期 Issues/PRs
+    name: 馃Ч 娓呯悊杩囨湡 Issues/PRs
     runs-on: ubuntu-latest
     
     steps:
-      - name: 🏷�?标记并关闭过期内�?
-        uses: actions/stale@v9
+      - name: 馃彿锔?鏍囪骞跺叧闂繃鏈熷唴瀹?        uses: actions/stale@v10
         with:
-          # ===== Issue 配置 =====
+          # ===== Issue 閰嶇疆 =====
           days-before-issue-stale: 7
           days-before-issue-close: 7
           stale-issue-label: 'stale'
           stale-issue-message: |
-            👋 这个 Issue 已经 **7 �?* 没有活动了�?
-            
-            如果问题仍然存在，请回复说明最新情况，我们会继续跟进�?
-            如果问题已解决或不再需要，可以直接关闭�?Issue�?
-            
-            **如果 7 天内没有回复，此 Issue 将自动关闭�?*
+            馃憢 杩欎釜 Issue 宸茬粡 **7 澶?* 娌℃湁娲诲姩浜嗐€?            
+            濡傛灉闂浠嶇劧瀛樺湪锛岃鍥炲璇存槑鏈€鏂版儏鍐碉紝鎴戜滑浼氱户缁窡杩涖€?            濡傛灉闂宸茶В鍐虫垨涓嶅啀闇€瑕侊紝鍙互鐩存帴鍏抽棴姝?Issue銆?            
+            **濡傛灉 7 澶╁唴娌℃湁鍥炲锛屾 Issue 灏嗚嚜鍔ㄥ叧闂€?*
           close-issue-message: |
-            🔒 由于长时间没有活动，�?Issue 已自动关闭�?
-            
-            如果问题仍然存在，欢迎重新打开或创建新�?Issue�?
-          
-          # ===== PR 配置 =====
+            馃敀 鐢变簬闀挎椂闂存病鏈夋椿鍔紝姝?Issue 宸茶嚜鍔ㄥ叧闂€?            
+            濡傛灉闂浠嶇劧瀛樺湪锛屾杩庨噸鏂版墦寮€鎴栧垱寤烘柊鐨?Issue銆?          
+          # ===== PR 閰嶇疆 =====
           days-before-pr-stale: 21
           days-before-pr-close: 14
           stale-pr-label: 'stale'
           stale-pr-message: |
-            👋 这个 PR 已经 **21 �?* 没有活动了�?
+            馃憢 杩欎釜 PR 宸茬粡 **21 澶?* 娌℃湁娲诲姩浜嗐€?            
+            璇锋鏌ユ槸鍚﹂渶瑕侊細
+            - 瑙ｅ喅鍚堝苟鍐茬獊
+            - 鍥炲 review 鎰忚
+            - 鏇存柊浠ｇ爜
             
-            请检查是否需要：
-            - 解决合并冲突
-            - 回复 review 意见
-            - 更新代码
-            
-            **如果 14 天内没有更新，此 PR 将自动关闭�?*
+            **濡傛灉 14 澶╁唴娌℃湁鏇存柊锛屾 PR 灏嗚嚜鍔ㄥ叧闂€?*
           close-pr-message: |
-            🔒 由于长时间没有活动，�?PR 已自动关闭�?
-            
-            如果您仍希望合入这些更改，请重新打开或创建新�?PR�?
-          
-          # ===== 排除规则 =====
-          # 带有这些标签的不会被标记�?stale
+            馃敀 鐢变簬闀挎椂闂存病鏈夋椿鍔紝姝?PR 宸茶嚜鍔ㄥ叧闂€?            
+            濡傛灉鎮ㄤ粛甯屾湜鍚堝叆杩欎簺鏇存敼锛岃閲嶆柊鎵撳紑鎴栧垱寤烘柊鐨?PR銆?          
+          # ===== 鎺掗櫎瑙勫垯 =====
+          # 甯︽湁杩欎簺鏍囩鐨勪笉浼氳鏍囪涓?stale
           exempt-issue-labels: 'pinned,security,enhancement,help wanted,good first issue'
           exempt-pr-labels: 'pinned,security,work-in-progress,wip'
           
-          # 排除草稿 PR
+          # 鎺掗櫎鑽夌 PR
           exempt-draft-pr: true
           
-          # ===== 其他配置 =====
-          # 每次运行最多处理的数量
+          # ===== 鍏朵粬閰嶇疆 =====
+          # 姣忔杩愯鏈€澶氬鐞嗙殑鏁伴噺
           operations-per-run: 50
           
-          # 只处理这些状态的
+          # 鍙鐞嗚繖浜涚姸鎬佺殑
           only-labels: ''
           
-          # 移除 stale 标签（当有新活动时）
+          # 绉婚櫎 stale 鏍囩锛堝綋鏈夋柊娲诲姩鏃讹級
           remove-stale-when-updated: true
           
-          # 调试模式（设�?true 时只打印不实际操作）
+          # 璋冭瘯妯″紡锛堣涓?true 鏃跺彧鎵撳嵃涓嶅疄闄呮搷浣滐級
           debug-only: false
